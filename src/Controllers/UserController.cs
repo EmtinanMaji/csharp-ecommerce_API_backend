@@ -94,12 +94,14 @@ namespace api.Controllers
                 return StatusCode(500, new ErrorResponse { Success = false, Message = ex.Message });
             }
         }
+        
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
             try
             {
+                
                 var user = await _userService.LoginUserAsync(loginModel);
                 if (user == null)
                 {
@@ -108,13 +110,14 @@ namespace api.Controllers
 
                 var token = _authService.GenerateJwt(user);
 
-                return ApiResponse.Success(new { Token = token, User = user }, "User logged in successfully");
+                return ApiResponse.Success(new { token, user }, "User logged in successfully");
             }
             catch (Exception ex)
             {
                 return ApiResponse.ServerError($"Internal server error: {ex.Message}");
             }
         }
+
 
         [HttpPut("{userId}")]
         public async Task<IActionResult> UpdateUser(Guid userId, User updateUser)

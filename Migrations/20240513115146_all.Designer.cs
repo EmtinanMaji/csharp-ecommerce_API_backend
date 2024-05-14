@@ -12,8 +12,8 @@ using api.EntityFramework;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240511202722_FirstMigrations")]
-    partial class FirstMigrations
+    [Migration("20240513115146_all")]
+    partial class all
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -129,7 +129,8 @@ namespace Backend.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()

@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using api.DTOs;
 using api.EntityFramework;
+using api.Helpers;
 using api.Model;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,29 +22,20 @@ namespace api.Services
 
         }
 
-        public async Task <PaginationDto<ProductModel>> GetProducts(int pageNumber, int pageSize)
+        public async Task <PaginationDto<Product>> GetProducts(int pageNumber, int pageSize)
 
         {
             var totalProductCount = await appDbContext.Products.CountAsync();
 
 
             var products = await appDbContext.Products
-            .Select(p => new ProductModel
-            {
-                
-                Name = p.Name,
-                Slug = p.Slug,
-                ImageUrl = p.ImageUrl,
-                Description = p.Description,
-                Sold = p.Sold,
-                Price = p.Price,
-                Quantity = p.Quantity,
-                Shipping = p.Shipping,
-            })
+            .OrderByDescending(b => b.CreatedAt)
+            .ThenByDescending(b => b.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
+            .Include(p => p.Category)
             .ToListAsync();
-            return new PaginationDto<ProductModel>
+            return new PaginationDto<Product>
             {
                 Items = products,
                 TotalCount = totalProductCount,
@@ -61,30 +53,30 @@ namespace api.Services
 
         public async Task<Product?> GetProductById(Guid ProductId)
         {
-            return await appDbContext.Products.Include(Product => Product.Category)
-            .Include(product => product.OrderItems)
-                   .ThenInclude(orderItem => orderItem.Product)
+            return await appDbContext.Products.Include(p => p.Category)
             .FirstOrDefaultAsync(Product => Product.Id == ProductId);
         }
-        public async Task<Product> CreateProductService(ProductModel NewProduct)
+        public async Task<Product> CreateProductService(Product NewProduct)
+        {
+            Product product = new Product
         {
 
-            var product = new Product
-            {
-                Id = Guid.NewGuid(),
-                Name = NewProduct.Name,
-                Slug = NewProduct.Slug,
-                ImageUrl = NewProduct.ImageUrl,
-                Description = NewProduct.Description,
-                Price = NewProduct.Price,
-                Quantity = NewProduct.Quantity,
-                Sold = NewProduct.Sold,
-                Shipping = NewProduct.Shipping,
-                CreatedAt = NewProduct.CreatedAt
-            };
+            Id = Guid.NewGuid(),
+            Name = NewProduct.Name,
+            Slug = Slug.GenerateSlug(NewProduct.Name),
+            ImageUrl = NewProduct.ImageUrl,
+            Description = NewProduct.Description,
+            Quantity = NewProduct.Quantity,
+            Sold = NewProduct.Sold,
+            Shipping = NewProduct.Shipping,
+            Price = NewProduct.Price,
+            CategoryId = NewProduct.CategoryId,
+            CreatedAt = DateTime.UtcNow
+
+        };
             appDbContext.Products.Add(product);
             await appDbContext.SaveChangesAsync();
-            return product;
+            return NewProduct;
         }
         public async Task AddProductOrder(Guid ProductId, Guid OrderId)
         {
@@ -101,9 +93,6 @@ namespace api.Services
         {
             //     //create record 
             var productUpdated = appDbContext.Products
-            .Include(product => product.Category)
-            .Include(product => product.OrderItems)
-            .ThenInclude(orderItem => orderItem.Product)
             .FirstOrDefault(product =>
             product.Id == ProductId);
             {
@@ -117,8 +106,10 @@ namespace api.Services
                     productUpdated.Sold = updateProduct.Sold;
                     productUpdated.Shipping = updateProduct.Shipping;
                     productUpdated.CategoryId = updateProduct.CategoryId;
+                    
+                    
                 }
-                appDbContext.SaveChanges();
+                await appDbContext.SaveChangesAsync();
                 return productUpdated;
             }
         }

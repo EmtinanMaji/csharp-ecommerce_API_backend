@@ -76,7 +76,7 @@ namespace api.Controllers
         }
 
         [HttpPost]
-        // [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateCategory(Category newCategory)
         {
             try

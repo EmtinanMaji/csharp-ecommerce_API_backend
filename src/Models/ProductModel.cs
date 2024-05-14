@@ -18,7 +18,7 @@ namespace api.Model
         [MinLength(5, ErrorMessage = "product name must be at least 5 characters long.")]
         [MaxLength(50, ErrorMessage = "product name must be at  50 characters long.")]
         public string Name { get; set; }
-        public required string Slug { get; set; }
+        public string Slug { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
         [MaxLength(300, ErrorMessage = "Description can be at most 300 characters long.")]
         public string Description { get; set; } = string.Empty;

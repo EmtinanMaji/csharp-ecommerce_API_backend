@@ -65,7 +65,7 @@ FROM
 --Create user Table
 CREATE TABLE
     users (
-        user_id UUID PRIMARY KEy DEFAULT uuid_generate_v4 (),
+        user_id UUID UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
         user_name VARCHAR(100) NOT NULL,
         user_email varchar(100) UNIQUE NOT NULL,
         user_password varchar(255) NOT NULL,

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class FirstMigrations : Migration
+    public partial class all : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -53,7 +53,7 @@ namespace Backend.Migrations
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Slug = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     ImageUrl = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
                     Price = table.Column<double>(type: "double precision", nullable: false),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     Sold = table.Column<int>(type: "integer", nullable: false),

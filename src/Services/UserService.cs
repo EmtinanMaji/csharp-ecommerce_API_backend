@@ -23,12 +23,12 @@ namespace api.Services
 
         public async Task<IEnumerable<User>> GetAllUsersService()
         {
-            return await _appDbContext.Users.Include(o => o.Orders).ToListAsync();
+            return await _appDbContext.Users.ToListAsync();
         }
 
         public async Task<User?> GetUserById(Guid userId)
         {
-            return await _appDbContext.Users.Include(o => o.Orders).FirstOrDefaultAsync(user => user.UserId == userId);
+            return await _appDbContext.Users.FirstOrDefaultAsync(user => user.UserId == userId);
         }
 
         public async Task<User> CreateUserService(User newUser)
@@ -68,6 +68,7 @@ namespace api.Services
             }
             return false;
         }
+        
         public async Task<UserModel?> LoginUserAsync(LoginModel loginModel)
         {
 

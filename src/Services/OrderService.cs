@@ -19,13 +19,13 @@ namespace api.Services
         ////// Get All
         public async Task<IEnumerable<Order>> GetAllOrders()
         {
-            return await _appDbContext.Orders.Include(u => u.User).ToListAsync();
+            return await _appDbContext.Orders.ToListAsync();
         }
 
         //////// Get By ID
         public async Task<Order?> GetOrderById(Guid orderId)
         {
-            return await _appDbContext.Orders.Include(u => u.User).FirstOrDefaultAsync(order => order.OrderId == orderId);
+            return await _appDbContext.Orders.FirstOrDefaultAsync(order => order.OrderId == orderId);
         }
 
         ////// Post

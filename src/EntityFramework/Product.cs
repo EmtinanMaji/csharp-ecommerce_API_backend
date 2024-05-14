@@ -7,8 +7,8 @@ namespace api.EntityFramework
      public class Product{
 
     public Guid Id { get; set;}
-    public  string Name { get; set;}
-    public required string Slug { get; set;}
+    public string Name { get; set;}
+    public string Slug { get; set;}
     public string ImageUrl { get; set;}=string.Empty;
     public string Description { get; set;}=string.Empty;
     public required double Price { get; set;}

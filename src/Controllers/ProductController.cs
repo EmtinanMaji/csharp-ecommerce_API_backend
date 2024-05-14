@@ -26,6 +26,10 @@ namespace api.Controller
         {
 
             var Product = await _productService.GetProducts(pageNumber, pageSize);
+            if (Product == null)
+        {
+            return ApiResponse.NotFound("No Product Found");
+        }
             return ApiResponse.Success(Product, "All products are returned successfully");
 
         }
@@ -52,19 +56,31 @@ namespace api.Controller
                 return StatusCode(500, new ErrorResponse { Message = ex.Message });
             }
         }
-        [HttpPut("{ProductId}")]
-        public async Task<IActionResult> CreateProduct(ProductModel NewProduct)
+        [HttpPost]
+        public async Task<IActionResult> CreateProduct(Product NewProduct)
         {
 
-            if (!ModelState.IsValid)
+            try
             {
-                throw new Exception("Invalid User Data");
+                var createdProduct = await _productService.CreateProductService(NewProduct);
+                if (createdProduct != null)
+                {
+                    return CreatedAtAction(nameof(GetProduct), new { productId = createdProduct.Id }, createdProduct);
+                }
+                else
+                {
+                    return Ok(new SuccessResponse<Product>
+                    {
+                        Message = "Product is created successfully",
+                        Data = createdProduct
+                    });
+                }
             }
-
-
-            var newProduct = await _productService.CreateProductService(NewProduct);
-            return ApiResponse.Created(newProduct, "User created successfully");
-
+            catch (Exception ex)
+            {
+                Console.WriteLine($"product can not be created");
+                return StatusCode(500, new ErrorResponse { Success = false, Message = ex.Message });
+            }
         }
         [HttpPost("AddOrderItem")]
         public async Task<IActionResult> AddProductOrder([FromQuery] Guid ProductId, [FromQuery] Guid OrderId)
@@ -80,24 +96,24 @@ namespace api.Controller
             }
         }
         [HttpPost]
-        public async Task<IActionResult> UpdateProductService(Guid productId, ProductModel updateProduct)
+        public async Task<IActionResult> UpdateProductService(Guid productId,ProductModel updateProduct)
         {
             try
             {
 
-                var Product = await _productService.UpdateProductService(productId, updateProduct);
-                if (Product == null)
+                var product = await _productService.UpdateProductService(productId, updateProduct);
+                if (product == null)
                 {
-                    return NotFound(new ErrorResponse { Message = "There is no category found to update." });
+                    return NotFound(new ErrorResponse { Message = "There is no product found to update." });
                 }
                 else
                 {
-                    return ApiResponse.Success(Product, "Product are returned successfully");
+                    return Ok(new SuccessResponse<Product> { Success = true, Message = "product is updated successfully", Data = product });
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"There is an error , can not update the category");
+                Console.WriteLine($"There is an error , can not update the product");
                 return StatusCode(500, new ErrorResponse { Message = ex.Message });
             }
         }
@@ -138,6 +154,20 @@ namespace api.Controller
             var products = await _productService.SearchProductsAsync(keyword);
             return Ok(products);
         }
+        /*
+        [HttpGet("products/search")]
+    public async Task<IActionResult> SearchProducts(string? keyword, decimal? minPrice, decimal? maxPrice, string? sortBy, bool isAscending, int page = 1, int pageSize = 3)
+    {
+        var products = await _productService.SearchProductsAsync(keyword, minPrice, maxPrice, sortBy, isAscending, page, pageSize);
+        if (products.Any())
+        {
+            return Ok(products);
+        }
+        else
+        {
+            throw new NotFoundException("No products found matching the search keyword");
+        }
+    }*/
 
     }
 }

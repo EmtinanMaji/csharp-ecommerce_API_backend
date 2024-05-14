@@ -81,7 +81,7 @@ namespace api.Controllers
             try
             {
                 var createdOrder = await _orderService.PostOrder(newOrder);
-                if (createdOrder != null)
+                if (createdOrder == null)
                 {
                     return NotFound(new ErrorResponse { Message = $"There is no order entered !" });
                 }
