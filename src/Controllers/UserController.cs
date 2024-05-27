@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using api.EntityFramework;
-using api.Model;
 using api.Models;
 using api.Services;
-using api.Controller;
+using api.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
@@ -26,28 +25,25 @@ namespace api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers([FromQuery] QueryParameters queryParams)
         {
             try
             {
-                var users = await _userService.GetAllUsersService();
-                if (users.ToList().Count < 1)
+                var users = await _userService.GetAllUsersService(queryParams);
+                if (users == null)
                 {
-                    return NotFound(new ErrorResponse { Success = false, Message = "There is no users to display" });
+                    return ApiResponse.NotFound("There is no users to display");
                 }
-                else
-                {
-                    return Ok(new SuccessResponse<IEnumerable<User>> { Success = true, Message = "all users are returned successfully", Data = users });
-                }
+                return ApiResponse.Success(users, "All users are returned successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred here when tried get all users");
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 
         [HttpGet("{userId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetUser(Guid userId)
         {
             try
@@ -59,7 +55,7 @@ namespace api.Controllers
                 }
                 else
                 {
-                    return Ok(new SuccessResponse<User> { Success = true, Message = "user is returned successfully", Data = user });
+                    return Ok(new SuccessResponse<UserDto> { Success = true, Message = "user is returned successfully", Data = user });
                 }
             }
             catch (Exception ex)
@@ -97,41 +93,34 @@ namespace api.Controllers
         
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+        {
+                if (!ModelState.IsValid)
+                {
+                    return ApiResponse.BadRequest("Invalid User Data");
+                }
+                var loggedInUser = await _userService.LoginUserAsync(loginDto);
+
+                var token = _authService.GenerateJwt(loggedInUser);
+
+
+                return ApiResponse.Success(new { token, loggedInUser }, "User Logged In successfully");
+        }
+        //DONE
+        [HttpPut("{userId}")]
+        public async Task<IActionResult> UpdateUser(Guid userId, UpdateUserDto updateUser)
         {
             try
             {
                 
-                var user = await _userService.LoginUserAsync(loginModel);
-                if (user == null)
-                {
-                    return ApiResponse.NotFound("User not found or invalid credentials");
-                }
-
-                var token = _authService.GenerateJwt(user);
-
-                return ApiResponse.Success(new { token, user }, "User logged in successfully");
-            }
-            catch (Exception ex)
-            {
-                return ApiResponse.ServerError($"Internal server error: {ex.Message}");
-            }
-        }
-
-
-        [HttpPut("{userId}")]
-        public async Task<IActionResult> UpdateUser(Guid userId, User updateUser)
-        {
-            try
-            {
                 var user = await _userService.UpdateUserService(userId, updateUser);
                 if (user == null)
                 {
-                    return NotFound(new ErrorResponse { Success = false, Message = "No user found" });
+                    return ApiResponse.NotFound($"User with ID {userId} not found" );
                 }
                 else
                 {
-                    return Ok(new SuccessResponse<User> { Success = true, Message = "user is updated successfully", Data = user });
+                    return ApiResponse.Success(updateUser, "User is updated successfully");
                 }
             }
             catch (Exception ex)
@@ -140,7 +129,7 @@ namespace api.Controllers
                 return StatusCode(500, new ErrorResponse { Success = false, Message = ex.Message });
             }
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{userId}")]
         public async Task<IActionResult> DeleteUser(Guid userId)
         {
@@ -162,26 +151,16 @@ namespace api.Controllers
                 return StatusCode(500, new ErrorResponse { Success = false, Message = ex.Message });
             }
         }
-
         [Authorize(Roles = "Admin")]
-        [HttpGet("profile")]
-        public async Task<IActionResult> GetUserProfile(Guid userId)
+        [HttpPut("ban_unban/{userId}")]
+        public async Task<IActionResult> BanUser(Guid userId)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            Console.WriteLine($"{userIdString}");
-            if (string.IsNullOrEmpty(userIdString))
+            var result = await _userService.Ban_UnbanUserAsync(userId);
+            if (!result)
             {
-                return ApiResponse.Unauthorized("User Id is missing from token");
+                return NotFound("User not found");
             }
-
-            if (!Guid.TryParse(userIdString, out userId))
-            {
-                return ApiResponse.BadRequest("Invalid User Id");
-            }
-            var user = await _userService.GetUserById(userId);
-
-            return ApiResponse.Success(user, "User profile is returned successfully");
-
+            return Ok("User ban status toggled successfully");
         }
 
     }

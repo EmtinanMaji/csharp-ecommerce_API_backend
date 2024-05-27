@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using api.DTOs;
 using api.EntityFramework;
 using api.Helpers;
-using api.Model;
+using api.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace api.Services
@@ -14,123 +14,145 @@ namespace api.Services
 
     public class ProductService
     {
-
-        private AppDbContext appDbContext;
+        private AppDbContext _appDbContext;
         public ProductService(AppDbContext appDbContext)
         {
-            this.appDbContext = appDbContext;
+            _appDbContext = appDbContext;
 
         }
 
-        public async Task <PaginationDto<Product>> GetProducts(int pageNumber, int pageSize)
+        public async Task <PaginationDto<Product>> GetProducts(QueryParameters queryParams)
 
         {
-            var totalProductCount = await appDbContext.Products.CountAsync();
+            // Start with a base query
+            var query = _appDbContext.Products.Include(p => p.Category).AsQueryable();
 
+            // Apply search keyword filter
+            if (!string.IsNullOrEmpty(queryParams.SearchKeyword))
+            {
+                query = query.Where(p => p.Name.ToLower().Contains(queryParams.SearchKeyword.ToLower()) || p.Description.ToLower().Contains(queryParams.SearchKeyword.ToLower()));
+            }
 
-            var products = await appDbContext.Products
-            .OrderByDescending(b => b.CreatedAt)
-            .ThenByDescending(b => b.Id)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .Include(p => p.Category)
+            // Apply sorting
+            if (!string.IsNullOrEmpty(queryParams.SortBy))
+            {
+                query = queryParams.SortOrder == "desc" 
+                ? query.OrderByDescending(u => EF.Property<object>(u, queryParams.SortBy))
+                : query.OrderBy(u => EF.Property<object>(u, queryParams.SortBy));
+            }
+
+            // Apply category filter
+            if (queryParams.SelectedCategories != null && queryParams.SelectedCategories.Any())
+            {
+                query = query.Where(p => queryParams.SelectedCategories.Contains(p.Category.CategoryId));
+            }
+
+            if (queryParams.MinPrice.HasValue){
+                query = query.Where(p => p.Price >= queryParams.MinPrice.Value);
+            }
+            if (queryParams.MaxPrice.HasValue)
+            {
+                query = query.Where(p => p.Price <= queryParams.MaxPrice.Value);
+            }
+
+            var totalProductCount = await query.CountAsync();
+
+            var products = await query
+            .Skip((queryParams.PageNumber - 1) * queryParams.PageSize)
+            .Take(queryParams.PageSize)
             .ToListAsync();
             return new PaginationDto<Product>
             {
                 Items = products,
                 TotalCount = totalProductCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize
+                PageNumber = queryParams.PageNumber,
+                PageSize = queryParams.PageSize
             };
-
-             //return await appDbContext.Products
-               //.Include(product => product.Category)
-               //.Include(product => product.OrderItems)
-               //.ThenInclude(orderItem => orderItem.Product)
-            //.ToListAsync();//using appContext to return all product on table
-
         }
 
-        public async Task<Product?> GetProductById(Guid ProductId)
+        public async Task<Product?> GetProductById(Guid productId)
         {
-            return await appDbContext.Products.Include(p => p.Category)
-            .FirstOrDefaultAsync(Product => Product.Id == ProductId);
+            return await _appDbContext.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.ProductId == productId);
         }
-        public async Task<Product> CreateProductService(Product NewProduct)
+        public async Task<Product> CreateProductService(Product newProduct)
         {
-            Product product = new Product
-        {
+            newProduct.ProductId = Guid.NewGuid();
+            newProduct.Slug = Slug.GenerateSlug(newProduct.Name);
+            newProduct.CreatedAt = DateTime.UtcNow;
+            _appDbContext.Products.Add(newProduct);
+            await _appDbContext.SaveChangesAsync();
+            return newProduct;
 
-            Id = Guid.NewGuid(),
-            Name = NewProduct.Name,
-            Slug = Slug.GenerateSlug(NewProduct.Name),
-            ImageUrl = NewProduct.ImageUrl,
-            Description = NewProduct.Description,
-            Quantity = NewProduct.Quantity,
-            Sold = NewProduct.Sold,
-            Shipping = NewProduct.Shipping,
-            Price = NewProduct.Price,
-            CategoryId = NewProduct.CategoryId,
-            CreatedAt = DateTime.UtcNow
-
-        };
-            appDbContext.Products.Add(product);
-            await appDbContext.SaveChangesAsync();
-            return NewProduct;
+            // var product = new Product
+            // {
+            //     Id = Guid.NewGuid(),
+            //     Name = newProduct.Name,
+            //     Slug = newProduct.Slug,
+            //     ImageUrl = newProduct.ImageUrl,
+            //     Description = newProduct.Description,
+            //     Price = newProduct.Price,
+            //     Quantity = newProduct.Quantity,
+            //     Sold = newProduct.Sold,
+            //     Shipping = newProduct.Shipping,
+            //     CreatedAt = newProduct.CreatedAt
+            // };
+            // _appDbContext.Products.Add(newProduct);
+            // await _appDbContext.SaveChangesAsync();
+            // return newProduct;
         }
-        public async Task AddProductOrder(Guid ProductId, Guid OrderId)
+        // public async Task AddProductOrder(Guid ProductId, Guid OrderId)
+        // {
+        //     var orderItem = new OrderItem
+        //     {
+        //         OrderId = OrderId,
+        //         ProductId = ProductId
+        //     };
+
+        //     await _appDbContext.OrderItems.AddAsync(orderItem);
+        //     await _appDbContext.SaveChangesAsync();
+        // }
+        public async Task<Product?> UpdateProductService(Guid productId, Product updateProduct)
         {
-            var orderItem = new OrderItem
+            var product = await _appDbContext.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+            if (product == null)
             {
-                OrderId = OrderId,
-                ProductId = ProductId
-            };
-
-            await appDbContext.OrderItems.AddAsync(orderItem);
-            await appDbContext.SaveChangesAsync();
-        }
-        public async Task<Product?> UpdateProductService(Guid ProductId, ProductModel updateProduct)
-        {
-            //     //create record 
-            var productUpdated = appDbContext.Products
-            .FirstOrDefault(product =>
-            product.Id == ProductId);
-            {
-                if (productUpdated != null)
-                {
-                    productUpdated.Name = updateProduct.Name;
-                    productUpdated.Slug = updateProduct.Slug;
-                    productUpdated.ImageUrl = updateProduct.ImageUrl;
-                    productUpdated.Description = updateProduct.Description;
-                    productUpdated.Quantity = updateProduct.Quantity;
-                    productUpdated.Sold = updateProduct.Sold;
-                    productUpdated.Shipping = updateProduct.Shipping;
-                    productUpdated.CategoryId = updateProduct.CategoryId;
-                    
-                    
-                }
-                await appDbContext.SaveChangesAsync();
-                return productUpdated;
+                return null;
             }
-        }
-        public async Task<bool> DeleteProductService(Guid ProductId)
+
+            // Optionally check if the category exists
+            var categoryExists = await _appDbContext.Categories.AnyAsync(c => c.CategoryId == updateProduct.CategoryId);
+            if (!categoryExists)
+            {
+                throw new ArgumentException("Invalid category ID");
+            }
+            // Update the product fields if they are not null or empty
+            product.Name = string.IsNullOrEmpty(updateProduct.Name) ? product.Name : updateProduct.Name;
+            product.Slug = Slug.GenerateSlug(updateProduct.Name);
+            product.ImageUrl = string.IsNullOrEmpty(updateProduct.ImageUrl) ? product.ImageUrl : updateProduct.ImageUrl;
+            product.Description = string.IsNullOrEmpty(updateProduct.Description) ? product.Description : updateProduct.Description;
+            product.Quantity = updateProduct.Quantity != default ? updateProduct.Quantity : product.Quantity;
+            product.Sold = updateProduct.Sold != default ? updateProduct.Sold : product.Sold;
+            product.Shipping = updateProduct.Shipping != default ? updateProduct.Shipping : product.Shipping;
+            product.CategoryId = updateProduct.CategoryId != default ? updateProduct.CategoryId : product.CategoryId;
+            
+
+            _appDbContext.Products.Update(product);
+            await _appDbContext.SaveChangesAsync();
+            return product;
+        
+    }
+        public async Task<bool> DeleteProductService(Guid productId)
         {
 
-            var ProductToRemove = appDbContext.Products.FirstOrDefault(P => P.Id == ProductId);
-            if (ProductToRemove != null)
+            var productToRemove = _appDbContext.Products.FirstOrDefault(p => p.ProductId == productId);
+            if (productToRemove != null)
             {
-                appDbContext.Products.Remove(ProductToRemove);
-                await appDbContext.SaveChangesAsync();
+                _appDbContext.Products.Remove(productToRemove);
+                await _appDbContext.SaveChangesAsync();
                 return true;
             }
             return false;
         }
 
-        public async Task<IEnumerable<Product>> SearchProductsAsync(string keyword)
-        {
-            return await appDbContext.Products
-               .Where(p => p.Name.Contains(keyword))
-               .ToListAsync();
-        }
     }
 }

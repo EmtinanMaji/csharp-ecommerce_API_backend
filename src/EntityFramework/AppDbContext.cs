@@ -36,8 +36,8 @@ namespace api.EntityFramework
             //----------------- Product (Nouir) --------------------
             modelBuilder.Entity<Product>(entity =>
             {
-                entity.HasKey(p => p.Id);
-                entity.Property(p => p.Id).HasDefaultValueSql("uuid_generate_v4()");
+                entity.HasKey(p => p.ProductId);
+                entity.Property(p => p.ProductId).HasDefaultValueSql("uuid_generate_v4()");
                 entity.Property(p => p.Name).IsRequired().HasMaxLength(100);
                 entity.Property(p => p.Slug).HasMaxLength(100);
                 entity.Property(p => p.ImageUrl);

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System;
 
-namespace api.Controller
+namespace api.Controllers
 {
     public static class ApiResponse
     {

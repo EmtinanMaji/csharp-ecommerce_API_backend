@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using api.EntityFramework;
 using api.Models;
 using api.Services;
+using api.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 
@@ -20,28 +21,21 @@ namespace api.Controllers
             _orderService = new OrderService(appDbContext);
         }
         [HttpGet]
-        public async Task<IActionResult> GetOrders()
+        public async Task<IActionResult> GetOrders([FromQuery] QueryParameters queryParams)
         {
             try
             {
-                var orders = await _orderService.GetAllOrders();
-                if (orders.ToList().Count <= 0)
+                var orders = await _orderService.GetAllOrders(queryParams);
+                
+                if (orders == null)
                 {
-                    return NotFound(new ErrorResponse { Message = "There is no orders to display" });
+                    return ApiResponse.NotFound("There is no orders to display");
                 }
-                else
-                {
-                    return Ok(new SuccessResponse<IEnumerable<Order>>
-                    {
-                        Message = "Orders are returned successfully",
-                        Data = orders
-                    });
-                }
+                return ApiResponse.Success(orders, "Orders are returned successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"There is an error , can not return the order list");
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 

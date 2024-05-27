@@ -27,7 +27,7 @@ namespace api.EntityFramework
         public DateTime CreatedAt { get; set; }
 
         // Relationships
-        public List<Product>? Products { get; set; }
+        public ICollection<Product>? Products { get; set; }
 
     }
 

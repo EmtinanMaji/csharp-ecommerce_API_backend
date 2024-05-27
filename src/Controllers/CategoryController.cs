@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using api.DTOs;
 using api.EntityFramework;
 using api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -14,35 +15,29 @@ namespace api.Controllers
     public class CategoryController : ControllerBase
     {
         private readonly CategoryService _categoryService;
-        public CategoryController(AppDbContext appDbContext)
+        private readonly AuthService _authService;
+        public CategoryController(CategoryService categoryService, AuthService authService)
         {
-            _categoryService = new CategoryService(appDbContext);
+            _categoryService = categoryService;
+            _authService = authService;
+
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllCategory()
+        public async Task<IActionResult> GetAllCategory([FromQuery] QueryParameters queryParams)
         {
             try
             {
-                var categories = await _categoryService.GetAllCategoryService();
-                if (categories.ToList().Count <= 0)
+                var categories = await _categoryService.GetAllCategoryService(queryParams);
+                if (categories == null)
                 {
-                    return NotFound(new ErrorResponse { Message = "There is no categories to display" });
+                    return ApiResponse.NotFound("There is no categories to display");
                 }
-                else
-                {
-                    return Ok(new SuccessResponse<IEnumerable<Category>>
-                    {
-                        Message = "Categories are returned successfully",
-                        Data = categories
-                    });
-                }
-
+                return ApiResponse.Success(categories, "Categories are returned successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"There is an error , can not return the category list");
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
 
         }
@@ -50,34 +45,31 @@ namespace api.Controllers
         [HttpGet("{categoryId}")]
         public async Task<IActionResult> GetCategory(Guid categoryId)
         {
+            
             try
             {
 
                 var category = await _categoryService.GetCategoryById(categoryId);
                 if (category == null)
                 {
-                    return NotFound(new ErrorResponse { Message = $"There is no category found with ID : {categoryId}" });
+                    return ApiResponse.NotFound($"There is no category found with ID : {categoryId}");
                 }
                 else
                 {
-                    return Ok(new SuccessResponse<Category>
-                    {
-                        Message = "Category is returned successfully",
-                        Data = category
-                    });
+                    return ApiResponse.Success(category, "Category is returned successfully");
+                    
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"There is an error , can not return the category");
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
 
         }
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateCategory(Category newCategory)
+        public async Task<IActionResult> CreateCategory([FromBody] Category newCategory)
         {
             try
             {
@@ -97,8 +89,7 @@ namespace api.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"There is an error , can not create new category");
-                return StatusCode(500, new ErrorResponse { Message = ex.Message });
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 

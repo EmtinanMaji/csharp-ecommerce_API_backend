@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using api.EntityFramework;
 
 
-namespace api.Model
+namespace api.Models
 {
   public class CategoryModel
   {
@@ -29,7 +29,7 @@ namespace api.Model
     public DateTime CreatedAt { get; set; }
 
     // Relationships
-    public List<ProductModel>? Products { get; set; } 
+    public ICollection<ProductModel>? Products { get; set; } 
   }
 
 }

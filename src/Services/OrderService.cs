@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using api.DTOs;
 using api.EntityFramework;
-using api.Model;
+using api.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace api.Services
@@ -17,9 +18,43 @@ namespace api.Services
         }
 
         ////// Get All
-        public async Task<IEnumerable<Order>> GetAllOrders()
+        
+        // public async Task<IEnumerable<Order>> GetAllOrders()
+        // {
+        //     return await _appDbContext.Orders.ToListAsync();
+        // }
+        public async Task<PaginationDto<Order>> GetAllOrders(QueryParameters queryParams)
         {
-            return await _appDbContext.Orders.ToListAsync();
+            // Start with a base query
+            var query = _appDbContext.Orders.Include(u => u.User).AsQueryable();
+
+            // Apply search keyword filter
+            if (!string.IsNullOrEmpty(queryParams.SearchKeyword))
+            {
+                query = query.Where(p => p.OrderStatus.ToLower().Contains(queryParams.SearchKeyword.ToLower()));
+            }
+
+            // Apply sorting
+            if (!string.IsNullOrEmpty(queryParams.SortBy))
+            {
+                query = queryParams.SortOrder == "desc"
+                ? query.OrderByDescending(u => EF.Property<object>(u, queryParams.SortBy))
+                : query.OrderBy(u => EF.Property<object>(u, queryParams.SortBy));
+            }
+
+            var totalOrderCount = await query.CountAsync();
+
+            var Orders = await query
+            .Skip((queryParams.PageNumber - 1) * queryParams.PageSize)
+            .Take(queryParams.PageSize)
+            .ToListAsync();
+            return new PaginationDto<Order>
+            {
+                Items = Orders,
+                TotalCount = totalOrderCount,
+                PageNumber = queryParams.PageNumber,
+                PageSize = queryParams.PageSize
+            };
         }
 
         //////// Get By ID
@@ -39,19 +74,19 @@ namespace api.Services
         }
 
         //////// Update
-        public async Task<Order?> PutOrder(Guid orderId, Order putorder)
+        public async Task<Order?> PutOrder(Guid orderId, Order putOrder)
         {
             var existingOrder = _appDbContext.Orders.FirstOrDefault(o => o.OrderId == orderId);
             if (existingOrder != null)
             {
-                existingOrder.OrderStatus = putorder.OrderStatus;
-                existingOrder.OrderTotal = putorder.OrderTotal;
+                existingOrder.OrderStatus = putOrder.OrderStatus;
+                existingOrder.OrderTotal = putOrder.OrderTotal;
             }
             await _appDbContext.SaveChangesAsync();
             return existingOrder;
         }
 
-        /////// Delet
+        /////// Delete
         public async Task<bool> DeleteOrder(Guid orderId)
         {
             var OrderToRemove = _appDbContext.Orders.FirstOrDefault(o => o.OrderId == orderId);

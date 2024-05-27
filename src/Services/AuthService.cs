@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Text;
 using api.EntityFramework;
 using api.Models;
+using api.Dtos;
 using Microsoft.IdentityModel.Tokens;
 
 namespace api.Services
@@ -11,17 +12,21 @@ namespace api.Services
 
 public class AuthService
 {
-    private readonly IConfiguration _configuration;
 
-    public AuthService(IConfiguration configuration)
+    public AuthService()
     {
-        _configuration = configuration;
-        Console.WriteLine($"{_configuration["Jwt:Issuer"]}");
+        Console.WriteLine($"Jwt Issuer: {Environment.GetEnvironmentVariable("Jwt__Issuer")}");
     }
-    public string GenerateJwt(UserModel user)
+    public string GenerateJwt(UserDto user)
         {
 
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]);
+            var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? throw new
+InvalidOperationException("JWT Key is missing in environment variables.");
+            var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? throw new
+            InvalidOperationException("JWT Issuer is missing in environment variables.");
+            var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience") ?? throw new
+            InvalidOperationException("JWT Audience is missing in environment variables.");
+            var key = Encoding.ASCII.GetBytes(jwtKey);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -33,8 +38,8 @@ public class AuthService
                 Expires = DateTime.UtcNow.AddMinutes(10),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
 
-                Issuer = _configuration["Jwt:Issuer"],
-                Audience = _configuration["Jwt:Audience"],
+                Issuer = jwtIssuer,
+                Audience = jwtAudience,
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();

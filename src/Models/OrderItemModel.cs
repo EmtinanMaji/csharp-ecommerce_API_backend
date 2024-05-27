@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using api.EntityFramework;
-using api.Model;
+using api.Models;
 
 namespace api.Models
 {
@@ -13,7 +13,7 @@ namespace api.Models
     [Column("product_id")]
     public Guid ProductId { get; set; }//Foreign Key
    
-    public int Quntity { get; set; }
+    public int Quantity { get; set; }
     //Relations M-M between Orders and Products
     public OrderModel? Order { get; set; }
     public ProductModel? Product { get; set; }

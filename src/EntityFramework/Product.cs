@@ -6,12 +6,12 @@ namespace api.EntityFramework
      [Table("Products")]
      public class Product{
 
-    public Guid Id { get; set;}
+    public Guid ProductId { get; set;}
     public string Name { get; set;}
-    public string Slug { get; set;}
+    public string Slug { get; set;} = string.Empty;
     public string ImageUrl { get; set;}=string.Empty;
     public string Description { get; set;}=string.Empty;
-    public required double Price { get; set;}
+    public decimal Price { get; set;}
     public  int Quantity { get; set;}
     public  int Sold{ get; set;}
     public double Shipping { get; set;}
@@ -21,5 +21,6 @@ namespace api.EntityFramework
 
     //Relationships
     public Category? Category { get; set;}
+    
     public List<OrderItem>? OrderItems { get; set; } // for M-M with order
     }}
