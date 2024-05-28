@@ -16,15 +16,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 DotNetEnv.Env.Load();
 
-var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? throw new
-InvalidOperationException("JWT Key is missing in environment variables.");
-var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? throw new
-InvalidOperationException("JWT Issuer is missing in environment variables.");
-var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience") ?? throw new
-InvalidOperationException("JWT Audience is missing in environment variables.");
+// Get JWT settings from environment variables
+var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? throw new InvalidOperationException("JWT Key is missing in environment variables.");
+var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? throw new InvalidOperationException("JWT Issuer is missing in environment variables.");
+var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience") ?? throw new InvalidOperationException("JWT Audience is missing in environment variables.");
 
-var defaultConnection = Environment.GetEnvironmentVariable("DefaultConnection") ?? throw new
-InvalidOperationException("Default Connection is missing in environment variables.");
+// Get the database connection string from environment variables
+var defaultConnection = Environment.GetEnvironmentVariable("DefaultConnection") ?? throw new InvalidOperationException("Default Connection is missing in environment variables.");
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

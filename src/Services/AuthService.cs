@@ -15,17 +15,24 @@ public class AuthService
 
     public AuthService()
     {
-        Console.WriteLine($"Jwt Issuer: {Environment.GetEnvironmentVariable("Jwt__Issuer")}");
+        Console.WriteLine($"JWT Issuer: {Environment.GetEnvironmentVariable("Jwt__Issuer")}");
     }
     public string GenerateJwt(UserDto user)
         {
 
-            var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? throw new
-InvalidOperationException("JWT Key is missing in environment variables.");
-            var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? throw new
-            InvalidOperationException("JWT Issuer is missing in environment variables.");
-            var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience") ?? throw new
-            InvalidOperationException("JWT Audience is missing in environment variables.");
+            var jwtKey =
+            Environment.GetEnvironmentVariable("Jwt__Key")
+            ?? throw new InvalidOperationException("JWT Key is missing in environment variables.");
+            var jwtIssuer =
+                Environment.GetEnvironmentVariable("Jwt__Issuer")
+                ?? throw new InvalidOperationException(
+                    "JWT Issuer is missing in environment variables."
+                );
+            var jwtAudience =
+                Environment.GetEnvironmentVariable("Jwt__Audience")
+                ?? throw new InvalidOperationException(
+                    "JWT Audience is missing in environment variables."
+                );
             var key = Encoding.ASCII.GetBytes(jwtKey);
 
             var tokenDescriptor = new SecurityTokenDescriptor
