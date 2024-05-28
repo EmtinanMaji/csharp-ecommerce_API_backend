@@ -87,7 +87,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(MyAllowSpecificOrigins,
                       policy =>
                       {
-                          policy.WithOrigins("http://localhost:3000")
+                          policy.WithOrigins("http://localhost:3000", "https://bloom-and-grow-store.netlify.app")
                                               .AllowAnyHeader()
                                               .AllowAnyMethod()
                                               .AllowCredentials();
